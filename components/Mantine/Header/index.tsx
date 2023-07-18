@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createStyles, Header, Container, Group, Burger, Paper, Transition, rem, Button } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
 import Link from "next/link"
 import LogoutButton from "../../LogoutButton"
-
+import { getUser, signOut } from "../../../supabase_request"
+import { Session } from "@supabase/supabase-js"
 const HEADER_HEIGHT = rem(60)
 
 const useStyles = createStyles((theme) => ({
@@ -83,8 +84,15 @@ interface HeaderResponsiveProps {
 
 function HeaderResponsive({ links }: HeaderResponsiveProps) {
   const [opened, { toggle, close }] = useDisclosure(false)
+  const [session, setSession] = useState<Session | null>()
   const [active, setActive] = useState(links[0].link)
   const { classes, cx } = useStyles()
+
+  useEffect(() => {
+    getUser().then((session) => {
+      setSession(session.session)
+    })
+  }, [])
 
   const items = links.map((link) => (
     <Link
@@ -106,6 +114,27 @@ function HeaderResponsive({ links }: HeaderResponsiveProps) {
         <Group spacing={5} className={classes.links}>
           {items}
         </Group>
+        {session ? (
+          <>
+            <h1>{session.user.email}</h1>
+            <Button
+              variant='light'
+              onClick={() => {
+                signOut().then((success) => {
+                  if (success) {
+                    setSession(null)
+                  }
+                })
+              }}
+            >
+              Sign Out
+            </Button>
+          </>
+        ) : (
+          <Link href='/login'>
+            <Button variant='light'>Login</Button>
+          </Link>
+        )}
       </Container>
     </Header>
   )
